@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <FrameLayout
+        android:paddingTop="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/imageViewRowPlace"
+            android:layout_width="match_parent"
+            android:layout_height="205dp"
+            app:srcCompat="@drawable/sample" />
+
+        <LinearLayout
+            android:layout_marginTop="187dp"
+            android:layout_marginLeft="280dp"
+            android:layout_width="80dp"
+            android:layout_height="19dp"
+            android:gravity="bottom|right"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <RatingBar
+                android:id="@+id/ratingBarRowPlace"
+                style="@android:style/Widget.Holo.Light.RatingBar.Small"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:numStars="5"
+                android:stepSize="0.1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textViewRowPlaceName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Название"
+            android:textColor="@color/colorPrimaryDark"
+            android:textSize="22sp"
+            android:textStyle="italic|bold" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textViewRowPlaceShortDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Краткое описание"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</LinearLayout>
