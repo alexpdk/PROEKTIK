@@ -21,10 +21,12 @@ package com.givemeaway.computer.myapplication;
  */
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -36,6 +38,8 @@ import android.widget.Toast;
 
 import com.givemeaway.computer.myapplication.AdditionalClasses.ObjectsConverter;
 import com.givemeaway.computer.myapplication.AdditionalClasses.Place;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -43,10 +47,23 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * This demo shows how GMS Location can be used to check for changes to the users location.  The
@@ -70,6 +87,7 @@ public class MapActivity extends AppCompatActivity
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final int[] COLORS = new int[]{R.color.colorPrimary,R.color.red,R.color.colorAccent,R.color.green,R.color.colorPrimaryDark,R.color.yellow};
 
     /**
      * Flag indicating whether a requested permission has been denied after returning in
@@ -82,6 +100,11 @@ public class MapActivity extends AppCompatActivity
     ArrayList<Place> allPlaces = new ArrayList<>();
     private ObjectsConverter objectsConverter = new ObjectsConverter();
 
+    private OkHttpClient client = new OkHttpClient();
+    private FusedLocationProviderClient mFusedLocationClient;
+    private Context context;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +113,7 @@ public class MapActivity extends AppCompatActivity
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        context = getBaseContext();
     }
 
     @Override
@@ -101,14 +125,14 @@ public class MapActivity extends AppCompatActivity
         String allPlaceJSON;
 
 
-        if(placeJson == null){
+        if (placeJson == null) {
             allPlaceJSON = intent.getStringExtra("json_all");
             allPlaces = objectsConverter.ConvertToPlaceArrayList(allPlaceJSON);
-        }else{
+        } else {
             Place place = GSON.fromJson(placeJson, Place.class);
             allPlaces.add(place);
         }
-        for(Place place : allPlaces){
+        for (Place place : allPlaces) {
             map.addMarker(new MarkerOptions().position(new LatLng(
                     place.getnCoordinate(), place.geteCoordinate()
             )).title(place.getName()));
@@ -122,8 +146,128 @@ public class MapActivity extends AppCompatActivity
         map.setOnMarkerClickListener(this);
         enableMyLocation();
     }
-    public void buildWay(View view){
+    public void buildOneLeg(final ArrayList<LatLng> geoValues, final int color){
+        new Handler(context.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                ArrayList<Polyline> polylines = new ArrayList<>();
+                //add route(s) to the map.
+                for (int i = 0; i <geoValues.size()-1; i++) {
 
+                    Log.i("Polylines", geoValues.get(i).toString());
+
+                    PolylineOptions polyOptions = new PolylineOptions();
+                    polyOptions.color(getResources().getColor(color));
+                    polyOptions.width(10);
+
+                    polyOptions.add(geoValues.get(i));
+                    polyOptions.add(geoValues.get(i+1));
+
+                    Polyline polyline = mMap.addPolyline(polyOptions);
+                    polylines.add(polyline);
+                }
+            }
+        });
+    }
+    public void buildWayFromPosition(double longitude, double latitude){
+
+        String key = "AIzaSyAL3tu9tquV685UamSaV3fRLMD0Fc4mV2M";
+        Place lastPlace = allPlaces.get(allPlaces.size()-1);
+        String requestUrl = "https://maps.googleapis.com/maps/api/directions/json?&origin=" +
+                latitude + "," + longitude
+                + "&destination="
+                + lastPlace.getnCoordinate()+","+lastPlace.geteCoordinate();
+        if(allPlaces.size()>1){
+            requestUrl += "&waypoints=";
+            for(int i=0; i<allPlaces.size()-1; i++){
+                if(i>0) requestUrl += "|";
+                requestUrl += allPlaces.get(i).getnCoordinate()+","+allPlaces.get(i).geteCoordinate();
+            }
+        }
+        requestUrl+="&key="+key;
+        Log.i("MyRequest",requestUrl);
+        //"&waypoints=Charlestown,MA|Lexington,MA&key="+key;
+
+        final Request request = new Request.Builder().url(requestUrl).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.i("MyRequest","Failure!");
+            }
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+//                Log.i("MyRequest",response.body().string());
+
+                JSONArray legs;
+                try{
+                    JSONObject obj = new JSONObject(response.body().string());
+                    legs = new JSONArray((new JSONArray(obj
+                                    .get("routes").toString()).getJSONObject(0)
+                                    .get("legs").toString()));
+                    for(int i=0; i<legs.length(); i++) {
+                        JSONArray steps = new JSONArray(legs.getJSONObject(i).get("steps").toString());
+                        ArrayList<LatLng> geoValues = new ArrayList<>();
+
+                        JSONObject pair = new JSONObject(steps.getJSONObject(0).get("start_location").toString());
+                        double lat = Double.parseDouble(pair.get("lat").toString());
+                        double lng = Double.parseDouble(pair.get("lng").toString());
+                        geoValues.add(new LatLng(lat, lng));
+
+                        for(int j=0; j<steps.length(); j++){
+                            pair = new JSONObject(steps.getJSONObject(j).get("end_location").toString());
+                            lat = Double.parseDouble(pair.get("lat").toString());
+                            lng = Double.parseDouble(pair.get("lng").toString());
+                            geoValues.add(new LatLng(lat, lng));
+                        }
+                        int colorIndex = i % COLORS.length;
+                        buildOneLeg(geoValues, COLORS[colorIndex]);
+                    }
+                }
+                catch(Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    public void buildWay(View view) {
+//        Uri gmmIntentUri = Uri.parse("google.navigation:q="+selectedPlace.getnCoordinate()+","+selectedPlace.geteCoordinate());
+        /*Uri gmmIntentUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination="
+                +selectedPlace.getnCoordinate()+","+selectedPlace.geteCoordinate());
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);*/
+
+//        String key = "AIzaSyA_NwytTz386dNYGTmN7k2n83hQLqsSUD0";
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            // Logic to handle location object
+                        }
+                        try{
+                            double longitude = location.getLongitude();
+                            double latitude = location.getLatitude();
+                            buildWayFromPosition(longitude, latitude);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
     }
     /**
      * Enables the My Location layer if the fine location permission has been granted.
