@@ -4,6 +4,8 @@ package com.givemeaway.computer.myapplication.AdditionalClasses;
  * Created by Computer on 09.12.2017.
  */
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -44,6 +46,11 @@ public class ObjectsConverter {
             placeList.add(place);
         }
         return placeList;
+    }
+    public String ConvertToPlaceArrayJSON(ArrayList<Place> places){
+        String res = GSON.toJson(places, ArrayList.class);
+        Log.i("GSON toJson",res);
+        return res;
     }
 
     public ArrayList<Review> ConvertToReviewArraylist(String reviews) {

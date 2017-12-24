@@ -1,0 +1,13 @@
+[{
+  "id": "monuments",
+  "name": "Памятники",
+  "categoryID":"showplace"
+},{
+  "id": "zoo",
+  "name": "Зоопарки",
+  "categoryID":"leisure"
+},{
+  "id": "cinema",
+  "name": "Кинотеатры",
+  "categoryID":"leisure"
+}]

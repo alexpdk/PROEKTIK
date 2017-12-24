@@ -46,7 +46,6 @@ public class ReviewActivity extends AppCompatActivity {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private ReviewAdapter reviewAdapter;
     private ArrayList<Review> reviewArrayList = new ArrayList<>();
-    private int id;
     private String jsonPlace;
     private ListView listView;
     private EditText editTextAuthorName;
@@ -61,8 +60,6 @@ public class ReviewActivity extends AppCompatActivity {
     private String jsonReviewSend;
     boolean checkUpdate;
     private String intentUpdated;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,10 +78,12 @@ public class ReviewActivity extends AppCompatActivity {
         objectsConverter = new ObjectsConverter();
         client = new OkHttpClient();
         Intent intent = getIntent();
-        id = intent.getIntExtra("id", -1);
+        jsonPlace = intent.getStringExtra("json");
 
-
-        new ReviewTask().execute();
+        place = GSON.fromJson(jsonPlace, Place.class);
+        reviewArrayList = place.getReviews();
+        reviewAdapter = new ReviewAdapter(getApplicationContext(), R.layout.row_review, reviewArrayList);
+        listView.setAdapter(reviewAdapter);
 
         ratingBar.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
             @Override
@@ -116,6 +115,7 @@ public class ReviewActivity extends AppCompatActivity {
                     .url("http://"+ serverParam.getIP()+":"+serverParam.getPort()+"/Servlet")
                     .post(body)
                     .build();
+
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
@@ -153,6 +153,7 @@ public class ReviewActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            int id = -1;
             final Request request = new Request.Builder().url("http://"+ serverParam.getIP()+":"+serverParam.getPort()+"/Servlet?query=GetPlace&placeID="+id).build();
             client.newCall(request).enqueue(new Callback() {
                 @Override

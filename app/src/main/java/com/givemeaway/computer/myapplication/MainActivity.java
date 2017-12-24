@@ -16,10 +16,17 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.givemeaway.computer.myapplication.AdditionalClasses.Category;
+import com.givemeaway.computer.myapplication.AdditionalClasses.DataProvider;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ObjectsConverter;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ServerParam;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private String jsonCategory;
     private ServerParam serverParam;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,10 +59,15 @@ public class MainActivity extends AppCompatActivity {
         objectsConverter = new ObjectsConverter();
         client = new OkHttpClient();
 
-        listView = (ListView)findViewById(R.id.listViewCategories);
+        listView = findViewById(R.id.listViewCategories);
 
-        categoryTask = new CategoryTask();
-        categoryTask.execute();
+//        categoryTask = new CategoryTask();
+//        categoryTask.execute();
+
+        jsonCategory = DataProvider.getCategories(getResources());
+        categoryArrayList = objectsConverter.ConvertToCategoryArrayList(jsonCategory);
+        categoryAdapter = new CategoryAdapter(getApplicationContext(), R.layout.row_category, categoryArrayList);
+        listView.setAdapter(categoryAdapter);
 
         //Обработка кликов на итемы
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -62,11 +76,11 @@ public class MainActivity extends AppCompatActivity {
                 String id = categoryArrayList.get(i).getId();
                 Intent intent = new Intent(getBaseContext(), SubcategoryActivity.class);
                 intent.putExtra("id", id);
-                startActivity(intent);
+                startActivity(intent );
             }
         });
-
     }
+
 
     class CategoryTask extends AsyncTask<Void, Void, Void> {
 

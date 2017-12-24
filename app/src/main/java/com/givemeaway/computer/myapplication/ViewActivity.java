@@ -19,7 +19,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.squareup.picasso.Picasso;
 
-public class OnePlaceActivity extends AppCompatActivity {
+public class ViewActivity extends AppCompatActivity {
 
     private Button buttonFree;
     private String json;
@@ -34,7 +34,7 @@ public class OnePlaceActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_one_place);
+        setContentView(R.layout.activity_view);
 
         Intent intent = getIntent();
         json = intent.getStringExtra("json");
@@ -75,23 +75,14 @@ public class OnePlaceActivity extends AppCompatActivity {
         description.setText(place.getDescription());
         ratingBar = (RatingBar)findViewById(R.id.ratingBarPlace);
         ratingBar.setRating(place.Rating());
-        buttonFree = (Button)findViewById(R.id.buttonPlaceFree);
+        buttonFree = (Button)findViewById(R.id.buttonPlaceFree2);
 
         if(place.getPrice() == 0){
+            Log.i("Free","Free");
             buttonFree.setVisibility(View.VISIBLE);
         }
         else {
             buttonFree.setVisibility(View.INVISIBLE);
         }
-
-        Button showButton = findViewById(R.id.showOnTheMap);
-        showButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(getBaseContext(), MapActivity.class);
-                intent.putExtra("json",json);
-                startActivity(intent);
-            }
-        });
     }
 }

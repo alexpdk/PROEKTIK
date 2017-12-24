@@ -15,6 +15,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.givemeaway.computer.myapplication.AdditionalClasses.DataProvider;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ObjectsConverter;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ServerParam;
 import com.givemeaway.computer.myapplication.AdditionalClasses.Subcategory;
@@ -34,6 +35,7 @@ public class SubcategoryActivity extends AppCompatActivity {
     private SubcategoryAdapter subcategoryAdapter;
     private ListView listView;
     private ArrayList<Subcategory> subcategoryArrayList;
+    private ArrayList<Subcategory> filteredList;
     private SubcategoryTask subcategoryTask;
     private String id;
     private String jsonSubcategory;
@@ -54,23 +56,27 @@ public class SubcategoryActivity extends AppCompatActivity {
         id = intent.getStringExtra("id");
         listView = (ListView)findViewById(R.id.listViewSubcategories);
 
-        subcategoryTask = new SubcategoryTask();
-        subcategoryTask.execute();
+        jsonSubcategory = DataProvider.getSubcategories(getResources());
+        subcategoryArrayList = objectsConverter.ConvertToSubcategoryArrayList(jsonSubcategory);
+        filteredList = new ArrayList<>();
+        for(Subcategory s : subcategoryArrayList){
+            if(s.getCategoryID().equals(id)) filteredList.add(s);
+        }
+
+        subcategoryAdapter = new SubcategoryAdapter(getApplicationContext(), R.layout.row_subcategory, filteredList);
+        listView.setAdapter(subcategoryAdapter);
 
         //Обработка кликов на итемы
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String id = subcategoryArrayList.get(i).getId();
+                String id = filteredList.get(i).getId();
                 Intent intent = new Intent(getBaseContext(), PlaceActivity.class);
                 intent.putExtra("id", id);
                 startActivity(intent);
             }
         });
     }
-
-
-
 
     class SubcategoryTask extends AsyncTask<Void, Void, Void> {
 

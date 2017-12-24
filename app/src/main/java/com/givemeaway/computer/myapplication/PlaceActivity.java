@@ -12,11 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
+import com.givemeaway.computer.myapplication.AdditionalClasses.DataProvider;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ObjectsConverter;
 import com.givemeaway.computer.myapplication.AdditionalClasses.Place;
 import com.givemeaway.computer.myapplication.AdditionalClasses.ServerParam;
@@ -41,6 +43,7 @@ public class PlaceActivity extends AppCompatActivity {
     //private PlaceAdapter placeAdapter;
     private ListView listView;
     private ArrayList<Place> placeArrayList;
+    private ArrayList<Place> filteredList;
     private PlaceTask placeTask;
     private String id;
     private String jsonPlace;
@@ -62,19 +65,35 @@ public class PlaceActivity extends AppCompatActivity {
         id = intent.getStringExtra("id");
         listView = (ListView)findViewById(R.id.listViewPlaces);
 
-        new PlaceTask().execute();
+        jsonPlace = DataProvider.getPlaces(getResources());
+        placeArrayList = objectsConverter.ConvertToPlaceArrayList(jsonPlace);
+        filteredList = new ArrayList<>();
+        for(Place p : placeArrayList){
+            if(p.getSubcategoryID().equals(id)) filteredList.add(p);
+        }
+
+        PlaceAdapter placeAdapter = new PlaceAdapter(getApplicationContext(), R.layout.row_place, filteredList);
+
+        listView.setAdapter(placeAdapter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent intent = new Intent(getBaseContext(), OnePlaceActivity.class);
-                String json = GSON.toJson(placeArrayList.get(i));
+                String json = GSON.toJson(filteredList.get(i));
                 intent.putExtra("json", json);
                 startActivity(intent);
             }
         });
-
-
+        Button showPlaces = findViewById(R.id.showPlaces);
+        showPlaces.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getBaseContext(), MapActivity.class);
+                intent.putExtra("json_all", new ObjectsConverter().ConvertToPlaceArrayJSON(filteredList));
+                startActivity(intent);
+            }
+        });
     }
 
     class PlaceTask extends AsyncTask<Void, Void, Void> {
